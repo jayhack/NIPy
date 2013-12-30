@@ -41,6 +41,14 @@ class MotionSequence:
 		pass
 
 
+	# Function: iter_dataframes
+	# -------------------------
+	# for each timestep, yields the dataframe as it was completed up until
+	# that timestup
+	def iter_dataframes (self):
+		pass
+
+
 	# Function: get_dataframe
 	# -----------------------
 	# returns a dataframe representing current motion sequence.
@@ -84,6 +92,13 @@ class PlayBackMotionSequence (MotionSequence):
 		
 		for row_index in range(len(self.dataframe)):
 			yield dict(self.dataframe.iloc[row_index])
+
+
+	def iter_dataframes (self):
+
+		for row_index in range(len(self.dataframe)):
+			yield self.dataframe.iloc[:row_index]
+
 
 
 	def get_dataframe (self):
@@ -139,13 +154,19 @@ class RealTimeMotionSequence (MotionSequence):
 			self.frames_list.append (self.get_frame ())
 
 
-
 	def iter_frames(self):
 		
 		while True:
 			frame = self.get_frame ()
 			self.frames_list.append (frame)
 			yield frame
+
+	def iter_dataframes (self):
+		
+		while True:
+			frame = self.get_frame ()
+			self.frames_list.append (frame)
+			yield self.get_dataframe()
 
 
 	def get_dataframe (self):

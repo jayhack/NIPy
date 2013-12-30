@@ -278,16 +278,17 @@ class StorageDelegate:
 	# saves a given recording
 	def save_recording (self, recording):
 
-		filepath = self.get_new_recording_filepath (self.filenames['recordings_dir'])
-		pickle.dump (recording, open (filepath, 'w'))
+		filepath = get_new_filepath (self.filenames['recordings_dir'], 'recording')
+		pickle.dump (recording.get_dataframe(), open (filepath, 'w'))
 
 
 	# Function: get_recording 
 	# -----------------------
 	# given the name of a recording, loads and retrieves it
 	def get_recording (self, recording_name):
+
 		full_filepath = os.path.join (self.filenames['recordings_dir'], recording_name)
-		recording = pd.read_pickle (full_filepath)
+		recording = PlayBackMotionSequence(pd.read_pickle (full_filepath))
 		return recording
 
 

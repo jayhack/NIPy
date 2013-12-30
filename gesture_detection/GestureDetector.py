@@ -5,18 +5,11 @@
 # Class for detecting gestures in motion sequences
 # 
 # ------------------------------------------------------------ #
-
-#--- Numpy ---
 import numpy as np
-
-#--- Pandas ---
 import pandas as pd
-
-#--- MatPlotLib ---
 import matplotlib.pyplot as plt
 
-#--- My Files ---
-from MotionSequence import MotionSequence
+from ..classification.GenerativeModel import GenerativeModel
 
 ########################################################################################################################
 ##############################[ --- UTILITIES --- ]#####################################################################
@@ -148,134 +141,17 @@ class GestureDetector:
 
 	# Function: detect 
 	# ----------------
-	# given a motionsequence, this applies all detectors to 
+	# given a MotionSequence, applies all GenerativeModels to it
+	def detect (self, ms):
 
-    ########################################################################################################################
-    ##############################[ --- Detecting Gestures --- ]############################################################
-    ########################################################################################################################
-
-	# Function: get_valid_window 
-	# --------------------------
-	# given a list of frames, returns most recent window of specified timespan
-	# if it contains a hand for its entirety, None otherwise
-	def get_valid_window (self, total_df, timespan=0.7):
-		
-		### Step 1: get total dataframe ###
-		if len(total_df) < 20:
-			return None
-
-		### Step 2: get window ###
-		window_df = extract_last_n_seconds (total_df, timespan)
-		if not window_df:
-			return None
+		index = 0
+		for df in ms.iter_dataframes ():
+			print index
+			index += 1
+			print [name for name, model in self.generative_models.items () if model.detect (df)]
 
 
-		### Step 3: validate window ###
-		if not hand_leaves (window_df):
-			return window_df
-		else:
-			return None
-
-
-	# Function: get_valid_windows
-	# ---------------------------
-	# returns a list of valid windows
-	def get_valid_windows (self, total_df, timespans=[0.4, 0.5, 0.6, 0.7, 0.75]):
-		windows = [self.get_valid_window (total_df, t) for t in timespans]
-		return [w for w in windows if w]
-
-	
-
-	# Function: detect_gesture
-	# ------------------------
-	# Parameters (2):
-	# 	- frames: list of frames to find gestures in
-	# 	- classifier: Classifier object to take care of classification
-	# Description:
-	# 	extracts windows from 'frames,' returns a list of Gesture objects
-	# 	found in 'frames'
-	# def detect_gesture (self, frames, classifier):
-
-	# 	### Step 1: get valid windows ###
-	# 	valid_windows = self.get_valid_windows (frames)
-
-	# 	### Step 2: classify each window ###
-	# 	gestures = []
-	# 	for v in valid_windows:
-
-	# 		gesture_name = classifier.classify (v)
-
-	# 		if gesture_name:
-	# 			new_gesture = Gesture (gesture_name, v)
-	# 			gestures.append (new_gesture)
-
-	# 	return gestures
-
-
-	# Function: detect_gestures
-	# -------------------------
-	# given a frame source, this returns a list of gestures
-	def detect_gestures (self, motion_sequence, classifier):
-
-		gesture_names = ['swirl', 'swirl_cc']
-
-		gestures = []
-		frames = []
-		for frame in frame_source.get_frames ():
-			frames.append (frame)
-			frames_df = pd.DataFrame (frames)
-
-			windows = self.get_valid_windows (frames_df)
-			for window in windows:
-				scores = classifier.classify (window)
-				print scores
-				if np.max(scores) > -270:
-					index = np.argmax (scores)
-					new_gesture = Gesture (gesture_names[index], window)
-					gestures.append (new_gesture)
-					frames = []
-					break
-
-		return gestures
-
-
-
-
-
-	# Function: find_gesture_probabilities
-	# ------------------------------------
-	# Parameters (2):
-	#	- frame_source: playback or real-time source of frames
-	#	- classifier: something to go from window -> prob dist. over gestures
-	# Description:
-	#	returns a dict Map: gesture_name -> p(gesture) for each index of frame_source
-	def find_gesture_probabilities (self, frame_source, classifier):
-
-		p_dist = [[], []]
-		def update_p_dist (pd, new_values):
-			if new_values == None:
-				pd[0].append (0.0)
-				pd[1].append (0.0)
-			else:
-				pd[0].append (new_values[0])
-				pd[1].append (new_values[1])
-
-		frames = []
-		for frame in frame_source.get_frames ():
-
-			frames.append (frame)
-			frames_df = pd.DataFrame(frames)
-
-			windows = get_valid_windows (frames_df)
-
-
-			update_p_dist (p_dist, new_values)
-
-			if len(frames) >= 200:
-				frames.pop (0)
-
-		return p_dist
-
+    
 
 
     ########################################################################################################################

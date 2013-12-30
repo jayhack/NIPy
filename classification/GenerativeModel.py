@@ -22,6 +22,13 @@ def sec_to_usec (sec):
 	
 	return sec*1000000
 
+# Function: usec_to_sec
+# ---------------------
+# converts seconds to microseconds
+def usec_to_sec (sec):
+	
+	return int(sec/float(1000000))
+
 
 # Function: start_time_to_index
 # -----------------------------
@@ -53,6 +60,9 @@ def temporal_subsample (df, start_time, end_time):
 # given a dataframe and secs, this will return the portion
 # of the dataframe that occured over the last n seconds
 def extract_last_n_seconds (df, secs):
+
+	if len(df) < 20:
+		return None
 
 	### Step 1: get desired start/end timestamps ###
 	end_time 	= df.iloc[-1]['timestamp']
@@ -131,8 +141,9 @@ class GenerativeModel:
 	def calculate_window_timespans (self):
 
 		durations = [ms.get_timespan () for ms in self.motion_sequences]
+		durations = [float(d)/float(1000000) for d in durations]
 		mean, std = np.mean (durations), np.std(durations)
-		return [mean-2*std, mean-1*std, mean, mean+std, mean+2*std]
+		return [mean-1*std, mean, mean+1*std]
 
 
 	# Function: train
@@ -166,18 +177,19 @@ class GenerativeModel:
 	# 'windows' to look at
 	def get_windows (self, df):
 
-		return [extract_last_n_seconds(df, timespan) for timespan in self.window_timespans]
+		timespans =  [extract_last_n_seconds(df, timespan) for timespan in self.window_timespans]
+		return [t for t in timespans if t]
 
 
 	# Function: detect
 	# ----------------
 	# returns true if the given motion sequence is though to have
 	# originated from the generative model
-	def detect (self, ms):
+	def detect (self, df):
 
-		windows = self.get_windows (ms.get_dataframe ())
+		windows = self.get_windows (df)
 		detections = [self.detect_window (df) for df in windows]
-		return any (detections)
+		return any(detections)
 
 
 		

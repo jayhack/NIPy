@@ -16,6 +16,7 @@ class RecordingThread (threading.Thread):
 		threading.Thread.__init__(self)
 		self.recorder = _recorder
 
+
 	# Function: run
 	# -------------
 	# adds frames to the motion sequence while recorder.is_recording
@@ -25,6 +26,9 @@ class RecordingThread (threading.Thread):
 		while self.recorder.is_recording ():
 			self.recorder.get_motion_sequence ().add_frame ()
 
+			if self.recorder.verbose:
+				print self.recorder.get_motion_sequence ().frames_list[-1]
+
 
 
 class Recorder:
@@ -33,10 +37,11 @@ class Recorder:
 	# ---------------------
 	# given a list of device receivers (or a single receiver),
 	# creates a recorder
-	def __init__ (self, _device_receivers):
+	def __init__ (self, _device_receivers, _verbose=True):
 		
 		self.motion_sequence = RealTimeMotionSequence (_device_receivers)
 		self.currently_recording = False
+		self.verbose = _verbose
 
 
 	# Function: is_recording

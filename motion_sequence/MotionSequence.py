@@ -49,6 +49,13 @@ class MotionSequence:
 		pass
 
 
+	# Function: trim_dataframe
+	# ------------------------
+	# given start, end, this trims the dataframe to the given
+	# indices
+	def trim_dataframe (self, start_index, end_index):
+		pass
+
 
 # class: PlayBackMotionSequence
 # -----------------------------
@@ -136,3 +143,7 @@ class RealTimeMotionSequence (MotionSequence):
 
 		return pd.DataFrame (self.frames_list)
 
+
+	def trim_dataframe (self, start_index, end_index):
+
+		self.frames_list = self.frames_list [start_index:end_index]

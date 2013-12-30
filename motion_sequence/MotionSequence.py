@@ -49,6 +49,15 @@ class MotionSequence:
 		pass
 
 
+	# Function: get_timespan
+	# ----------------------
+	# returns the total time spanned in this dataframe, in
+	# seconds
+	def get_timespan (self):
+		df = self.get_dataframe ()
+		return (df.iloc[-1]['timestamp'] - df.iloc[0]['timestamp'])
+
+
 	# Function: trim_dataframe
 	# ------------------------
 	# given start, end, this trims the dataframe to the given

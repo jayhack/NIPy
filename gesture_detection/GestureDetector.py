@@ -1,9 +1,8 @@
 #!/usr/bin/python
 # ------------------------------------------------------------ #
-# Class: Detection
-# ----------------
-# functions involved in detecting gestures, activities
-# requires a 'frame_source' and a 'classifier'
+# Class: GestureDetector
+# ----------------------
+# Class for detecting gestures in motion sequences
 # 
 # ------------------------------------------------------------ #
 
@@ -17,8 +16,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 #--- My Files ---
-from PlayBack import PlayBack
-from util import *
+from MotionSequence import MotionSequence
 
 ########################################################################################################################
 ##############################[ --- UTILITIES --- ]#####################################################################
@@ -127,21 +125,30 @@ class Gesture:
 ##############################[ --- DETECTOR --- ]######################################################################
 ########################################################################################################################
 
-class Detector:
-
-	#===[ Frame Source ]===
-	frame_source = None
-
-	#===[ Classification ]===
-
+class GestureDetector:
 
 	# Function: Constructor
 	# ---------------------
-	def __init__ (self):
-		pass
+	# creates all of the generative models
+	def __init__ (self, _gestures_dict):
+
+		#===[ Get Generative Models]===
+		self.gestures_dict = _gestures_dict
+		self.generative_models = self.get_generative_models ()
 
 
+	# Function: get_generative_models
+	# -------------------------------
+	# creates a GenerativeModel object for each gesture name, returns
+	# as a dict mapping gesture name -> GenerativeModel
+	def get_generative_models (self):
 
+		return {n: GenerativeModel (e) for n, e in self.gestures_dict.items ()}
+
+
+	# Function: detect 
+	# ----------------
+	# given a motionsequence, this applies all detectors to 
 
     ########################################################################################################################
     ##############################[ --- Detecting Gestures --- ]############################################################
@@ -208,7 +215,7 @@ class Detector:
 	# Function: detect_gestures
 	# -------------------------
 	# given a frame source, this returns a list of gestures
-	def detect_gestures (self, frame_source, classifier):
+	def detect_gestures (self, motion_sequence, classifier):
 
 		gesture_names = ['swirl', 'swirl_cc']
 

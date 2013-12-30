@@ -5,26 +5,15 @@
 # (functions that take in a dataframe, returns features)
 # as well as FeatureExtractor classes
 # -------------------------------------------------- #
-
-#--- Standard ---
 import math
 from collections import Counter
 import pickle
-
-#--- Pandas ---
 import pandas as pd
-
-#--- Numpy/Scipy ---
 import numpy as np
 import scipy
-
-#--- Scikit-Learn ---
 from sklearn.hmm import GaussianHMM
 from sklearn.preprocessing import scale
-
-
-#--- My Files ---
-from util import *
+from ..interface.util import *
 from copy import copy
 
 
@@ -38,7 +27,7 @@ from copy import copy
 # given a dataframe and the number of frames desired,
 # this returns a new dataframe w/ the desired number of frames,
 # each (roughly) evenly spaced
-def lower_time_resolution (df, new_res=20):
+def lower_time_resolution (df, new_res=10):
 
 	elapsed_time = df.iloc[-1]['timestamp'] - df.iloc[0]['timestamp']
 	desired_interval = int(float(elapsed_time) / float(new_res - 1))
@@ -124,7 +113,7 @@ def add_relative_position (df):
 # and that's it
 def get_cleaned_dataframe (df):
 
-	df = lower_time_resolution (df, new_res=20)
+	df = lower_time_resolution (df, new_res=10)
 	# df = add_relative_position (df)
 	df = add_velocity_acceleration (df)
 	df = df.drop (['fingers', 'hand_sphere_radius', 'hands', 'palm_x', 'palm_y', 'palm_z', 'timestamp'], 1)
@@ -224,7 +213,7 @@ class FeatureExtractor ():
 	# Description: 
 	# 	pass a dict of raw recordings, this trains the feature extraction
 	# 	function (if necessary)
-	def __init__ (self, raw_recordings_dict):
+	def __init__ (self):
 		pass
 
 
@@ -264,7 +253,8 @@ class AVFeatureExtractor (FeatureExtractor):
 
 	def extract (self, raw_recording):
 
-		return av_matrix (copy(raw_recording))
+		return np.array(av_matrix (copy(raw_recording)))
+
 
 
 # FeatureExtractor: CompressedAVFeatureExtractor
@@ -273,9 +263,9 @@ class AVFeatureExtractor (FeatureExtractor):
 # min, max
 class CompressedAVFeatureExtractor (FeatureExtractor):
 
-	def extract (self, raw_recording):
+	def extract (self, recording_dataframe):
 
-		avm = av_matrix (copy(raw_recording))
+		avm = av_matrix (copy(recording_dataframe))
 		stats_functions = [np.mean, np.std, np.max, np.min]
 		stats = []
 		for f in stats_functions:

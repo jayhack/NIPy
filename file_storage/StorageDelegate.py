@@ -10,6 +10,7 @@ import pickle
 import time
 import pandas as pd
 from ..interface.util import *
+from ..motion_sequence.MotionSequence import *
 
 
 
@@ -187,7 +188,7 @@ class StorageDelegate:
 	# of the gesture named 'gesture_name'
 	def save_gesture_recording (self, motion_sequence, gesture_name):
 
-		pickle.dump (motion_sequence, open(self.get_new_gesture_recording_filepath (gesture_name), 'w'))
+		pickle.dump (motion_sequence.get_dataframe (), open(self.get_new_gesture_recording_filepath (gesture_name), 'w'))
 
 
 	# Function: get_gesture_recordings
@@ -199,7 +200,7 @@ class StorageDelegate:
 		if not self.gesture_exists (gesture_name):
 			return []
 		else:
-			return [pickle.load (ms) for ms in self.get_gesture_recording_filepaths (gesture_name)]
+			return [PlayBackMotionSequence(pickle.load (open(ms, 'r'))) for ms in self.get_gesture_recording_filepaths (gesture_name)]
 
 
 

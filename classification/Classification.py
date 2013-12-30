@@ -5,18 +5,11 @@
 # NI data
 # 
 # ------------------------------------------------------------ #
-#--- Numpy ---
 import numpy as np
-
-#--- Pandas ---
 import pandas as pd
-
-#--- Scikit-Learn ---
-# from sklearn.neural_network import BernoulliRBM
 from sklearn.linear_model import LogisticRegression
+# from sklearn.neural_network import BernoulliRBM
 from sklearn import cross_validation
-
-#--- My Files ---
 import FeatureFunctions
 from util import *
 

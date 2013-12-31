@@ -21,7 +21,7 @@ from ..interface.util import *
 # Threshold for the score received from HMM
 class HMMScoreThreshold (Threshold):
 
-	std_dev_range = 2
+	std_dev_range = 3
 
 	def __init__ (self, _hmm_score_function, examples):
 

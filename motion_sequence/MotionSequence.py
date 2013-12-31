@@ -190,10 +190,11 @@ class PlayBackMotionSequence (MotionSequence):
 
 		assert not self._frames_exhausted.isSet()
 		time.sleep (timeout)
+		new_frame = dict(self.dataframe.iloc[self.current_frame_index])
 		self.current_frame_index += 1
 		if self.current_frame_index >= len (self.dataframe):
 			self._frames_exhausted.set ()
-		return dict(self.dataframe.iloc[self.current_frame_index])
+		return new_frame
 
 
 	def get_dataframe (self):

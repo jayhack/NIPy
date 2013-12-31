@@ -13,19 +13,14 @@ import threading
 from parameters import *
 from ..interface import util
 
-class ReceiverThread (threading.Thread):
-    
-    def __init__ (self, _device_receiver):
-        threading.Thread.__init__ (self)
-        self.device_receiver = _device_receiver
 
-    def run (self):
-        while self.device_receiver.is_receiving ():
-            self.device_receiver.read_frame ()
-
-
-
-class DeviceReceiver:
+# Class: DeviceReceiver
+# ---------------------
+# class for receiving frames from a device; runs in its own thread.
+# - start () to start getting frames (starts thread)
+# - stop () to terminate frame-getting (terminates thread)
+# - get_frame () to get most recent frame
+class DeviceReceiver (threading.Thread):
 
     # Function: zmq_init
     # ------------------
@@ -35,65 +30,52 @@ class DeviceReceiver:
         self.context = zmq.Context ()
         self.socket = self.context.socket(zmq.SUB)
         self.socket.connect (parameters['connect_address'])
-        self.socket.setsockopt(zmq.SUBSCRIBE, device_filters[self.device])
+        self.socket.setsockopt(zmq.SUBSCRIBE, device_filters[self.device_name])
 
 
     # Function: Constructor 
     # ---------------------
     # connects to the port, starts thread to receive frames
-    def __init__ (self, _device):
+    def __init__ (self, _device_name):
 
-        if not _device in device_filters.keys ():
-            print_error ("Unsupported device", str(_device) + " is unrecognized")
-        self.device = _device
-        self.zmq_init ()
-        self.currently_receiving = True
-        self.frame_available = False
+        #===[ Thread-related setup ]===
+        threading.Thread.__init__(self)
+        self._stop = threading.Event ()
+        self._new_frame_available = threading.Event ()
         self.last_frame = None
-        self.begin_receiving ()
+
+        #===[ Connect to Device ]===
+        if not _device_name in device_filters.keys ():
+            print_error ("Unsupported device", str(_device) + " is unrecognized")
+        self.device_name = _device_name
+        self.zmq_init ()
 
 
-    # Function: Destructor
-    # --------------------
-    # terminates thread that receives frames
-    def __del__ (self):
 
-        self.stop_receiving ()
+    # Function: run
+    # -------------
+    # main for this thread: getting frames
+    def run (self):
 
-
-    # Function: is_receiving
-    # ----------------------
-    # indicator for wether this should be receiving or no
-    def is_receiving (self):
-       
-        return self.currently_receiving
+        while not self._stop.isSet ():
+            self.read_frame ()
 
 
-    # Function: begin_receiving
-    # -------------------------
-    # starts the thread that gets frames from UDP
-    def begin_receiving (self):
+    # Function: stop
+    # --------------
+    # call to terminate this thread's operation
+    def stop (self):
 
-        self.currently_receiving = True
-        self.receiver_thread = ReceiverThread(self)
-        self.receiver_thread.start ()
-
-
-    # Function: stop_receiving
-    # ------------------------
-    # stops the thread that gets frames from UDP
-    def stop_receiving (self):
-        
-        self.currently_receiving = False
+        self._stop.set ()
 
 
     # Function: read_frame 
     # --------------------
-    # blocks until it gets a frame from the device, sets it as self.last_frame
+    # sets self.last_frame, sets self._frame_available
     def read_frame (self):
 
-        self.last_frame = json.loads (self.socket.recv ()[len(device_filters[self.device]):])
-        self.frame_available = True
+        self.last_frame = json.loads (self.socket.recv ()[len(device_filters[self.device_name]):])
+        self._new_frame_available.set ()
 
 
     # Function: get_frame 
@@ -101,22 +83,10 @@ class DeviceReceiver:
     # blocks until a new frame is available, returns it
     def get_frame (self):
 
-        while not self.frame_available:
-            pass
-        self.frame_available = False
+        self._new_frame_available.wait ()
+        self._new_frame_available.clear ()
         return self.last_frame
 
-
-    # Function: get_framerate
-    # -----------------------
-    # empirically determines the framerate in frames/second
-    def get_framerate (self, num_frames=5):
-
-        start_time = time.time ()
-        for i in range (int(num_frames)):
-            self.read_frame ()
-        end_time = time.time ()
-        return (num_frames)/(end_time - start_time)
 
 
 

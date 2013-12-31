@@ -3,12 +3,63 @@
 # ----------------------
 # container class for all 'motion sequences,'
 # which include both recordings and real-time
-# streams of NI data from any combo of devices
+# streams of NI data from any combo of devices.
+# call iter_frames () in the main thread to get them
+# real-time, either in playback or real mode.
 # ------------------------------------------------- # 
 import numpy as np
 import pandas as pd
+import threading
+import time
 from ..interface.util import *
 from ..devices.DeviceReceiver import DeviceReceiver
+
+
+# Function: sec_to_usec
+# ---------------------
+# converts seconds to microseconds
+def sec_to_usec (sec):
+	
+	return sec*1000000
+
+
+# Function: usec_to_sec
+# ---------------------
+# converts seconds to microseconds
+def usec_to_sec (sec):
+	
+	return int(sec/float(1000000))
+
+
+# Function: start_time_to_index
+# -----------------------------
+# given start time, returns the index of the time slice closest to it
+def start_time_to_index (df, start_time):
+
+	return np.argmin (np.abs(df['timestamp'] - start_time))
+
+
+# Function: end_time_to_index
+# ---------------------------
+# given start time, returns the index of the time slice closest to it
+def end_time_to_index (df, end_time):
+
+	return np.argmin (np.abs(df['timestamp'] - end_time))
+
+
+# Function: temporal_subsample
+# ----------------------------
+# given two times within the recording, this will return
+# the portion of the dataframe that occurs between
+def temporal_subsample (df, start_time, end_time):
+
+	# print "df start, end timestamp: ", df.iloc[0]['timestamp'], df.iloc[-1]['timestamp']
+	if start_time < df.iloc[0]['timestamp']:
+		# print "start time is earlier than possible"
+		raise ValueError
+	return df.loc[start_time_to_index (df, start_time) : end_time_to_index (df, end_time)]
+
+
 
 
 # class: MotionSequence
@@ -18,6 +69,16 @@ from ..devices.DeviceReceiver import DeviceReceiver
 # call iter_frames to iterate over the frames
 # call get_dataframe to get a dataframe containing all
 class MotionSequence:
+
+	def __init__ (self):
+
+		self._frames_exhausted 		= threading.Event ()
+		self._new_frame_available 	= threading.Event ()
+
+
+	########################################################################################################################
+	##############################[ --- ACCESSING PROPERTIES --- ]##########################################################
+	########################################################################################################################
 
 	# Function: __str__
 	# -----------------
@@ -33,22 +94,6 @@ class MotionSequence:
 		return len(self.get_dataframe ())
 
 
-	# Function: iter_frames
-	# ---------------------
-	# iterates through frames contained in this motionsequence as 
-	# dicts
-	def iter_frames (self):
-		pass
-
-
-	# Function: iter_dataframes
-	# -------------------------
-	# for each timestep, yields the dataframe as it was completed up until
-	# that timestup
-	def iter_dataframes (self):
-		pass
-
-
 	# Function: get_dataframe
 	# -----------------------
 	# returns a dataframe representing current motion sequence.
@@ -62,8 +107,41 @@ class MotionSequence:
 	# returns the total time spanned in this dataframe, in
 	# seconds
 	def get_timespan (self):
+
 		df = self.get_dataframe ()
 		return (df.iloc[-1]['timestamp'] - df.iloc[0]['timestamp'])
+
+
+
+
+	########################################################################################################################
+	##############################[ --- GETTING FRAMES/WINDOWS --- ]########################################################
+	########################################################################################################################
+
+	# Function: get_frame
+	# -------------------
+	# gets the next frame
+	def get_frame (self):
+		pass
+
+
+	# Function: stream_frames 
+	# -----------------------
+	# iterates through the frames in this motion sequence
+	def stream_frames (self):
+
+		while not self._frames_exhausted.isSet ():
+			new_frame = self.get_frame ()
+			self._new_frame_available.set ()
+			yield new_frame
+
+
+	# Function: get_window_df
+	# -----------------------
+	# given timespan, returns the appropriate window at current
+	# point in streaming 
+	def get_window_df (self):
+		pass
 
 
 	# Function: trim_dataframe
@@ -72,6 +150,20 @@ class MotionSequence:
 	# indices
 	def trim_dataframe (self, start_index, end_index):
 		pass
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 # class: PlayBackMotionSequence
@@ -85,20 +177,23 @@ class PlayBackMotionSequence (MotionSequence):
 
 	def __init__ (self, _dataframe):
 
+		MotionSequence.__init__ (self)
 		self.dataframe = _dataframe
 
+		if len(self.dataframe) == 0:
+			self._frames_exhausted.set ()
 
-	def iter_frames(self):
-		
-		for row_index in range(len(self.dataframe)):
-			yield dict(self.dataframe.iloc[row_index])
+		self.current_frame_index = 0	
 
 
-	def iter_dataframes (self):
+	def get_frame (self, timeout=0.03):
 
-		for row_index in range(len(self.dataframe)):
-			yield self.dataframe.iloc[:row_index]
-
+		assert not self._frames_exhausted.isSet()
+		time.sleep (timeout)
+		self.current_frame_index += 1
+		if self.current_frame_index >= len (self.dataframe):
+			self._frames_exhausted.set ()
+		return dict(self.dataframe.iloc[self.current_frame_index])
 
 
 	def get_dataframe (self):
@@ -106,72 +201,69 @@ class PlayBackMotionSequence (MotionSequence):
 		return self.dataframe
 
 
+	def trim_dataframe (self, start_index, end_index):
+		
+		self.dataframe = self.dataframe.iloc[start_index:end_index]
 
-# class: PlayBackMotionSequence
+
+	def get_window_df (self, timespan):
+
+		end_time 	= self.dataframe.iloc[self.current_frame_index]['timestamp']
+		start_time 	= end_time - sec_to_usec (timespan)
+
+		try:
+			return temporal_subsample (self.get_dataframe (), start_time, end_time)
+		except ValueError:
+			return None
+
+
+
+
+
+
+# Class: RealTimeMotionSequence
 # -----------------------------
-# motion sequence constructed from a recording/pickled
-# dataframe
+# motion sequence gathered real-time from a (set of) device(s)
 class RealTimeMotionSequence (MotionSequence):
 
 	seq_type = 'RealTimeMotionSequence' 
 
 
 	def __init__ (self, _device_receivers):
+		
+		MotionSequence.__init__(self)
 		if type(_device_receivers) == type([]):
 			self.device_receivers = _device_receivers
 		else:
 			self.device_receivers = [ _device_receivers]
-
 		self.frames_list = []
 
 
-	# Function: get_frame
-	# -------------------
-	# gets a single frame containing info from all of the 
-	# device receivers; blocks until it gets one from all.
 	def get_frame (self):
-		
-		total_frame = {}
-		for device_frame in [dr.get_frame () for dr in self.device_receivers]:
-			total_frame.update (device_frame)
-		return total_frame
 
+		new_frame = {}
+		for device_specific_frame in [dr.get_frame () for dr in self.device_receivers]:
+			new_frame.update (device_specific_frame)
 
-	# Function: add_frame 
-	# -------------------
-	# adds a single frame to the list of frames
-	def add_frame (self):
-
-		self.frames_list.append (self.get_frame ())
-
-
-	# consume_frames
-	# --------------
-	# continuously adds frames 
-	def gather_frames (self):
-		print "--- gather frames ---"
-		while True:
-			self.frames_list.append (self.get_frame ())
-
-
-	def iter_frames(self):
-		
-		while True:
-			frame = self.get_frame ()
-			self.frames_list.append (frame)
-			yield frame
-
-	def iter_dataframes (self):
-		
-		while True:
-			frame = self.get_frame ()
-			self.frames_list.append (frame)
-			yield self.get_dataframe()
+		self.frames_list.append (new_frame)
+		return new_frame
 
 
 	def get_dataframe (self):
 
 		return pd.DataFrame (self.frames_list)
+
+
+	def get_window_df (self, timespan):
+
+		end_time 	= self.get_dataframe().iloc[-1]['timestamp']
+		start_time 	= end_time - sec_to_usec (timespan)
+
+		### Step 2: try to temporal subsample, return none if impossible ###
+		try:
+			return temporal_subsample (self.get_dataframe (), start_time, end_time)
+		except ValueError:
+			return None
 
 
 	def trim_dataframe (self, start_index, end_index):

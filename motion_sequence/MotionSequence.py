@@ -253,6 +253,15 @@ class RealTimeMotionSequence (MotionSequence):
 	def get_dataframe (self):
 
 		return pd.DataFrame (self.frames_list)
+		# try:
+			# return pd.DataFrame (self.frames_list)
+		# except ValueError:
+			# print "for some reason it gets value error when trying to conv. frames list", "info on frames list:"
+			# print "length: ", len(self.frames_list)
+			# print "last frame: ", self.frames_list[-1]
+			# for frame in self.frames_list:
+				# print frame
+			# return pd.DataFrame (self.frames_list)
 
 
 	def get_window_df (self, timespan):

@@ -9,23 +9,23 @@ import pickle
 import numpy as np
 import pandas as pd
 from sklearn.hmm import GaussianHMM
-from sklearn import cross_validation
-import FeatureFunctions
+from FeatureFunctions import AVFeatureExtractor
 from EventMonitor import EventMonitor
 from Threshold import Threshold
 from ..interface.util import *
 
 
-# Class: HMMScoreThreshold
-# ---------------------
-# Threshold for the score received from HMM
-class HMMScoreThreshold (Threshold):
+
+# Class: GMScoreThreshold
+# -----------------------
+# Threshold for the score received from a generative model
+class GMScoreThreshold (Threshold):
 
 	std_dev_range = 3
 
-	def __init__ (self, _hmm_score_function, examples):
+	def __init__ (self, _gm_score_function, examples):
 
-		Threshold.__init__(self, _hmm_score_function)
+		Threshold.__init__(self, _gm_score_function)
 		self.train (examples)
 
 	def train (self, examples):
@@ -51,7 +51,7 @@ class GestureMonitor (EventMonitor):
 	# ---------------------
 	# train_ms_list: list of motion sequences to train on
 	# monitor_ms: motion sequence to monitor
-	def __init__ (self, _train_ms_list, _monitor_ms, _gesture_name, FeatureExtractor=FeatureFunctions.AVFeatureExtractor):
+	def __init__ (self, _train_ms_list, _monitor_ms, _gesture_name, FeatureExtractor=AVFeatureExtractor):
 
 		EventMonitor.__init__(self, _monitor_ms)
 		self.gesture_name = _gesture_name
@@ -67,8 +67,10 @@ class GestureMonitor (EventMonitor):
 
 		dfs 					= [ms.get_dataframe () for ms in motion_sequences]
 		examples				= [self.feature_extractor.extract (df) for df in dfs]
-		self.hmm 				= GaussianHMM ().fit (examples)
-		self.score_threshold 	= HMMScoreThreshold (self.hmm.score, examples)
+		examples				= [e for e in examples if not np.isnan(np.sum(e))]
+
+		self.hmm 				= GaussianHMM (n_components=5).fit (examples)
+		self.score_threshold 	= GMScoreThreshold (self.hmm.score, examples)
 		self.window_timespans 	= self.calculate_window_timespans (motion_sequences)
 
 

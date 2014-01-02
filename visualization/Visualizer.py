@@ -15,9 +15,6 @@ class Visualizer:
 					'palm_z': 'green',
 	}
 
-	def __init__ (self):
-		pass
-
 
 	# Function: plot_motion_sequence
 	# ------------------------------

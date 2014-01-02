@@ -4,52 +4,40 @@
 # class for recording motion sequences
 #-------------------------------------------------- #
 import threading
-from ..devices.DeviceReceiver import DeviceReceiver
 from ..motion_sequence.MotionSequence import RealTimeMotionSequence
 from ..interface.util import *
 
 
-class RecordingThread (threading.Thread):
+class Recorder (threading.Thread):
 
-	def __init__ (self, _recorder):
-		
-		threading.Thread.__init__(self)
-		self.recorder = _recorder
-
-
-	# Function: run
-	# -------------
-	# adds frames to the motion sequence while recorder.is_recording
-	# evaluates to true
-	def run (self):
-		
-		while self.recorder.is_recording ():
-			self.recorder.get_motion_sequence ().add_frame ()
-
-			if self.recorder.verbose:
-				print self.recorder.get_motion_sequence ().frames_list[-1]
-
-
-
-class Recorder:
-
-	# Function: constructor
+	# Function: Constructor
 	# ---------------------
-	# given a list of device receivers (or a single receiver),
-	# creates a recorder
+	# given a list of device receivers (or a single receiver), initializes
 	def __init__ (self, _device_receivers, _verbose=True):
 		
+		threading.Thread.__init__ (self)
 		self.motion_sequence = RealTimeMotionSequence (_device_receivers)
-		self.currently_recording = False
+		self._recording = threading.Event ()
 		self.verbose = _verbose
+	
 
-
-	# Function: is_recording
-	# ----------------------
-	# returns boolean value for wether this object is currently recording
 	def is_recording (self):
 
-		return self.currently_recording
+		return self._recording.isSet ()
+
+
+	def run (self):
+
+		self._recording.set ()
+		while self.is_recording():
+			self.motion_sequence.get_frame ()
+			if self.verbose:
+				print self.motion_sequence.get_dataframe ().iloc[-1]
+
+
+	def stop (self):
+
+		self._recording.clear ()
 
 
 	# Function: get_motion_sequence
@@ -60,25 +48,6 @@ class Recorder:
 		return self.motion_sequence
 
 
-	# Function: start
-	# ---------------
-	# call to begin recording; puts frames into recording in a new thread.
-	def start (self):
-
-		print_status ("Recorder", "Beginning recording")
-		self.currently_recording = True
-
-		self.recording_thread = RecordingThread (self)
-		self.recording_thread.start ()
-
-
-	# Function: stop
-	# --------------
-	# call to end recording
-	def stop (self):
-
-		self.currently_recording = False
-		print_status ("Recorder", "Ending recording")
 
 
 

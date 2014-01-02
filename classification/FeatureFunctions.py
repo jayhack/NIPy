@@ -27,7 +27,7 @@ from copy import copy
 # given a dataframe and the number of frames desired,
 # this returns a new dataframe w/ the desired number of frames,
 # each (roughly) evenly spaced
-def lower_time_resolution (df, new_res=10):
+def lower_time_resolution (df, new_res=5):
 
 	elapsed_time = df.iloc[-1]['timestamp'] - df.iloc[0]['timestamp']
 	desired_interval = int(float(elapsed_time) / float(new_res - 1))
@@ -113,7 +113,7 @@ def add_relative_position (df):
 # and that's it
 def get_cleaned_dataframe (df):
 
-	df = lower_time_resolution (df, new_res=10)
+	df = lower_time_resolution (df, new_res=5)
 	# df = add_relative_position (df)
 	df = add_velocity_acceleration (df)
 	df = df.drop (['fingers', 'hand_sphere_radius', 'hands', 'palm_x', 'palm_y', 'palm_z', 'timestamp'], 1)
@@ -146,54 +146,6 @@ def get_valid_recordings (raw_recordings_list, evaluation_function):
 
 	return [r for r in raw_recordings_list if evaluation_function (r)]
 
-
-
-
-########################################################################################################################
-##############################[ --- Validators --- ]############################################################
-########################################################################################################################
-
-# Class: Validator
-# ----------------
-# abstract class for all classes that take in a recording
-# and return wether it is 'valid' or not.
-class Validator ():
-
-	def __init__ (self, recordings_list):
-		pass
-
-	def evaluate (self, recording):
-		pass
-
-
-# Class: DefaultValidator
-# -----------------------
-# returns true for all recordingss
-class DefaultValidator (Validator):
-
-	def evaluate (self, recording):
-		return True
-
-
-# Class: TimeValidator
-# --------------------
-# validates based on proximity (in std dev) to 
-# to the mean elapsed time in all recordings in the list
-class TimeValidator (Validator):
-
-	def __init__ (self, r_list, threshold_std_dev=0.3):
-
-		ets = [get_elapsed_time(r) for r in r_list]
-		self.mean 		= np.mean (ets)
-		self.std_dev 	= np.std (ets)	
-		self.threshold 	= threshold_std_dev*self.std_dev
-
-	def evaluate (self, recording):
-
-		if abs(get_elapsed_time(recording) - self.mean) < self.threshold:
-			return True
-		else:
-			return False
 
 
 

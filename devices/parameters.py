@@ -6,3 +6,6 @@ device_filters = {
 					'leap':'__leap__',
 					'eyetribe':'__eyetribe__'
 }
+column_names = {
+	'leap': ['timestamp', 'yaw', 'hands', 'fingers', 'palm_z', 'palm_y', 'palm_x', 'pitch', 'hand_sphere_radius', 'roll']
+}

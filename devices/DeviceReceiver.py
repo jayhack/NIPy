@@ -48,6 +48,7 @@ class DeviceReceiver (threading.Thread):
         if not _device_name in device_filters.keys ():
             print_error ("Unsupported device", str(_device) + " is unrecognized")
         self.device_name = _device_name
+        self.column_names = column_names[self.device_name]
         self.zmq_init ()
 
 

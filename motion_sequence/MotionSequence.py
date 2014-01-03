@@ -237,6 +237,9 @@ class RealTimeMotionSequence (MotionSequence):
 			self.device_receivers = _device_receivers
 		else:
 			self.device_receivers = [ _device_receivers]
+		self.column_names = []
+		for r in self.device_receivers:
+			self.column_names += r.column_names
 		self.frames_list = []
 
 
@@ -252,7 +255,7 @@ class RealTimeMotionSequence (MotionSequence):
 
 	def get_dataframe (self):
 
-		return pd.DataFrame (self.frames_list)
+		return pd.DataFrame (self.frames_list, columns=self.column_names)
 		# try:
 			# return pd.DataFrame (self.frames_list)
 		# except ValueError:

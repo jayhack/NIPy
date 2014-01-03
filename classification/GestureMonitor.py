@@ -21,7 +21,7 @@ from ..interface.util import *
 # Threshold for the score received from a generative model
 class GMScoreThreshold (Threshold):
 
-	std_dev_range = 3
+	std_dev_range = 4
 
 	def __init__ (self, _gm_score_function, examples):
 

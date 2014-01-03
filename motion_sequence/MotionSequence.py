@@ -209,6 +209,9 @@ class PlayBackMotionSequence (MotionSequence):
 
 	def get_window_df (self, timespan):
 
+		if self._frames_exhausted.isSet ():
+			return None
+
 		end_time 	= self.dataframe.iloc[self.current_frame_index]['timestamp']
 		start_time 	= end_time - sec_to_usec (timespan)
 

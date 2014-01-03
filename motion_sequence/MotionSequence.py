@@ -241,6 +241,7 @@ class RealTimeMotionSequence (MotionSequence):
 		for r in self.device_receivers:
 			self.column_names += r.column_names
 		self.frames_list = []
+		self.dataframe = None
 
 
 	def get_frame (self):
@@ -248,23 +249,17 @@ class RealTimeMotionSequence (MotionSequence):
 		new_frame = {}
 		for device_specific_frame in [dr.get_frame () for dr in self.device_receivers]:
 			new_frame.update (device_specific_frame)
-
 		self.frames_list.append (new_frame)
+		self.dataframe = pd.DataFrame (self.frames_list, columns=self.column_names)
 		return new_frame
 
 
 	def get_dataframe (self):
 
-		return pd.DataFrame (self.frames_list, columns=self.column_names)
-		# try:
-			# return pd.DataFrame (self.frames_list)
-		# except ValueError:
-			# print "for some reason it gets value error when trying to conv. frames list", "info on frames list:"
-			# print "length: ", len(self.frames_list)
-			# print "last frame: ", self.frames_list[-1]
-			# for frame in self.frames_list:
-				# print frame
-			# return pd.DataFrame (self.frames_list)
+		if not self.dataframe:
+			return pd.DataFrame (columns=self.column_names)
+		else:
+			return self.dataframe
 
 
 	def get_window_df (self, timespan):

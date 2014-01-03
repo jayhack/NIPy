@@ -83,7 +83,7 @@ class GestureMonitor (EventMonitor):
 		durations = [ms.get_timespan () for ms in motion_sequences]
 		durations = [float(d)/float(1000000) for d in durations]
 		mean, std = np.mean (durations), np.std(durations)
-		return [mean-1*std, mean, mean+1*std]
+		return [mean-1.5*std, mean-1*std, mean, mean+1*std, mean+1.5*std]
 
 
 	# Function: get_window_dfs

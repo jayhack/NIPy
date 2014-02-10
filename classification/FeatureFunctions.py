@@ -116,7 +116,7 @@ def get_cleaned_dataframe (df):
 	df = lower_time_resolution (df, new_res=5)
 	# df = add_relative_position (df)
 	df = add_velocity_acceleration (df)
-	df = df.drop (['fingers', 'hand_sphere_radius', 'hands', 'palm_x', 'palm_y', 'palm_z', 'timestamp'], 1)
+	df = df.drop (['fingers', 'hand_sphere_radius', 'hands', 'timestamp'], 1)
 	return df
 
 

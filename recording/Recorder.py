@@ -3,48 +3,58 @@
 # ---------------
 # class for recording motion sequences
 #-------------------------------------------------- #
-import threading
+from ..threads.StoppableThread import StoppableThread
 from ..motion_sequence.MotionSequence import RealTimeMotionSequence
-from ..interface.util import *
+
+class Recorder (StoppableThread):
+
+	_name = "Recorder"
 
 
-class Recorder (threading.Thread):
-
-	# Function: Constructor
-	# ---------------------
-	# given a list of device receivers (or a single receiver), initializes
+	#==========[ Initialization	]==========
 	def __init__ (self, _device_receivers, _verbose=True):
-		
-		threading.Thread.__init__ (self)
+		""" 
+			PUBLIC: Constructor
+			-------------------
+			given a list of device receivers (or a single device receiver), initializes
+		"""
+		#=====[ Step 1: initialize StoppableThread	]=====
+		StoppableThread.__init__ (self, self._name)
+
+		#=====[ Step 2: set optional parameters ]=====
+		self._verbose = _verbose
+
+		#=====[ Step 3: create motion sequence to write to	]=====
 		self.motion_sequence = RealTimeMotionSequence (_device_receivers)
-		self._recording = threading.Event ()
-		self.verbose = _verbose
-	
+
 
 	def is_recording (self):
-
-		return self._recording.isSet ()
-
-
-	def run (self):
-
-		self._recording.set ()
-		while self.is_recording():
-			self.motion_sequence.get_frame ()
-			if self.verbose:
-				print self.motion_sequence.get_dataframe ().iloc[-1]
+		"""
+			PUBLIC: is_recording
+			--------------------
+			returns true if it is currently recording
+		"""
+		return self._stop.isSet ()
 
 
-	def stop (self):
+	def thread_iteration (self):
+		"""
+			PRIVATE: thread_iteration
+			-------------------------
+			on each thread iteration, adds a new frame to motion sequence
+			optionally prints out info on most recent frame, if appropriate
+		"""
+		self.motion_sequence.get_frame ()
+		if self._verbose:
+			print self.motion_sequence.get_dataframe ().iloc[-1]
 
-		self._recording.clear ()
 
-
-	# Function: get_motion_sequence
-	# -----------------------------
-	# returns the product of this recording
 	def get_motion_sequence (self):
-		
+		""" 
+			PUBLIC: get_motion_sequence
+			---------------------------
+			returns the product of this recording as a motion sequence
+		"""
 		return self.motion_sequence
 
 

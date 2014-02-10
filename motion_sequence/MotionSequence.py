@@ -180,13 +180,16 @@ class PlayBackMotionSequence (MotionSequence):
 		MotionSequence.__init__ (self)
 		self.dataframe = _dataframe
 
+		self.reset ()	
+
+	def reset (self):
+		self._frames_exhausted.clear ()
+		self.current_frame_index = 0
 		if len(self.dataframe) == 0:
 			self._frames_exhausted.set ()
 
-		self.current_frame_index = 0	
 
-
-	def get_frame (self, timeout=0.03):
+	def get_frame (self, timeout=0):
 
 		assert not self._frames_exhausted.isSet()
 		time.sleep (timeout)
@@ -234,35 +237,48 @@ class RealTimeMotionSequence (MotionSequence):
 
 
 	def __init__ (self, _device_receivers):
-		
+
+		#==========[ Step 1: initialize MotionSequence	]==========
 		MotionSequence.__init__(self)
+
+		#==========[ Step 2: set device receivers	]==========
 		if type(_device_receivers) == type([]):
 			self.device_receivers = _device_receivers
 		else:
 			self.device_receivers = [ _device_receivers]
-		self.column_names = []
-		for r in self.device_receivers:
-			self.column_names += r.column_names
+
+		#==========[ Step 3: initialize frames_list/dataframe	]==========
 		self.frames_list = []
 		self.dataframe = None
 
 
 	def get_frame (self):
-
+		""" 
+			PUBLIC: get_frame
+			-----------------
+			adds a frame to the current dataframe; returns the frame.
+		"""
+		#==========[ Step 1: add data from all receivers to frame	]==========
 		new_frame = {}
 		for device_specific_frame in [dr.get_frame () for dr in self.device_receivers]:
 			new_frame.update (device_specific_frame)
+
+		#==========[ Step 2: add frame to frames_list	]==========
 		self.frames_list.append (new_frame)
-		self.dataframe = pd.DataFrame (self.frames_list, columns=self.column_names)
 		return new_frame
 
 
 	def get_dataframe (self):
-
-		if not self.dataframe:
-			return pd.DataFrame (columns=self.column_names)
+		"""
+			PUBLIC: get_dataframe
+			---------------------
+			returns a dataframe-representation of self.frames_list
+			if there are no frames to speak of, returns None
+		"""
+		if len(self.frames_list) == 0:
+			return None
 		else:
-			return self.dataframe
+			return pd.DataFrame (self.frames_list)
 
 
 	def get_window_df (self, timespan):

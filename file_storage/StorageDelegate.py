@@ -55,13 +55,14 @@ class StorageDelegate:
 	##############################[ --- INITIALIZATION/MAINTENANCE --- ]####################################################
 	########################################################################################################################
 
-	# Function: build_filestructure
-	# -----------------------------
-	# fills out self.filenames given a path to the data
-	# directory, makes sure the filestructure exists as such.
 	def build_filestructure (self, data_dir):
-	
-		#===[ get filestructure ]===
+		"""
+			PRIVATE: build_filestructure
+			----------------------------
+			fills out self.filenames given a path to the data
+			directory, makes sure the filestructure exists as such.
+		"""
+		#=====[ Step 1: fill out self.filenames	]=====
 		self.filenames = {}
 		self.filenames['data_dir'] 			= data_dir
 		self.filenames['classifiers_dir']	= os.path.join (self.filenames['data_dir'], 'classifiers')
@@ -69,17 +70,23 @@ class StorageDelegate:
 		self.filenames['recordings_dir'] 	= os.path.join (self.filenames['data_dir'], 'recordings')
 		self.filenames['figures_dir']		= os.path.join (self.filenames['data_dir'], 'figures')
 
-		#===[ ensure the full structure is there ]===
+		# self.filenames['pose_dir']			= os.path.join (self.filenames['data_dir'], 'poses')		
+
+		#=====[ Step 2: ensure it exists as such	]=====
 		for d in self.filenames.values ():
 			ensure_dir_exists (d)
 
 
-	# Function: update_filesystem_snapshot
-	# ------------------------------------
-	# fills in self.filesystem w/ up-to-date information
 	def update_filesystem_snapshot (self):
+		"""
+			PRIVATE: update_filesystem_snapshot
+			-----------------------------------
+			updates knowledge of what files are where 
+		"""
+		#=====[ Poses	]=====
+		# current_poses = os.listdir (self.filenames['poses_dir'])
 
-		### Step 1: motion_sequences ###
+		#=====[ Gestures	]=====
 		current_gestures = os.listdir (self.filenames['gestures_dir'])
 		self.filenames['gestures_dirs'] = {gesture: os.path.join (self.filenames['gestures_dir'], gesture) for gesture in current_gestures}
 		
@@ -88,6 +95,25 @@ class StorageDelegate:
 		### Step 3: recordings ###
 
 
+
+	########################################################################################################################
+	##############################[ --- POSES --- ]#########################################################################
+	########################################################################################################################
+
+	def get_all_pose_examples (self, pose_class):
+		"""
+			PUBLIC: get_all_frames
+			----------------------
+			returns all frames of this pose class as a list of json
+		"""
+		#=====[ Step 1: assert this pose exists	]=====
+		if not pose in os.listdir (self.filenames['pose_dir']):
+			raise StandardError ("The pose class" + pose_class + " doesn't exist")
+
+		#=====[ Step 2: go into directory, get all examples	]=====
+		pose_class_dir 	= os.path.join (self.filenames['pose_dir'], pose_class)
+		all_examples 	= [pickle.load (open(filename, 'r')) for filename in os.listdir (pose_class_dir)]
+		return all_examples
 
 
 

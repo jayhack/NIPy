@@ -1,13 +1,12 @@
-#-------------------------------------------------- #
-# Class: Recorder
-# ---------------
-# class for recording motion sequences
-#-------------------------------------------------- #
 from ..threads.StoppableThread import StoppableThread
 from ..motion_sequence.MotionSequence import RealTimeMotionSequence
 
 class Recorder (StoppableThread):
-
+	"""
+		Class: Recorder
+		---------------
+		class for recording motion sequences 
+	"""
 	_name = "Recorder"
 
 
